@@ -1,5 +1,6 @@
 import tkinter as tk
 import chord_dicts
+from ChordSearch import ChordSearch
 
 root = tk.Tk()
 root.title('Chord Tool')
@@ -115,60 +116,53 @@ tk.Label(chord_search_frame, text='13th').grid(row=1, column=7, sticky='ew')
 #         col=1
 #         )
 
-root_var = tk.IntVar()
-third_var = tk.IntVar()
-fifth_var = tk.IntVar()
-seventh_var = tk.IntVar()
-ninth_var = tk.IntVar()
-eleventh_var = tk.IntVar()
-thirteenth_var = tk.IntVar()
+# root_var = tk.IntVar()
+# third_var = tk.IntVar()
+# fifth_var = tk.IntVar()
+# seventh_var = tk.IntVar()
+# ninth_var = tk.IntVar()
+# eleventh_var = tk.IntVar()
+# thirteenth_var = tk.IntVar()
 
-root_var.set(0)
-third_var.set(0)
-fifth_var.set(0)
-seventh_var.set(0)
-ninth_var.set(0)
-eleventh_var.set(0)
-thirteenth_var.set(0)
+# root_var.set(0)
+# third_var.set(0)
+# fifth_var.set(0)
+# seventh_var.set(0)
+# ninth_var.set(0)
+# eleventh_var.set(0)
+# thirteenth_var.set(0)
 
-def restrict_selection():
-    return "hi"
+# def restrict_selection():
+#     return "hi"
 
-vars=[root_var, third_var, fifth_var, seventh_var, ninth_var, eleventh_var, thirteenth_var]
+# vars=[root_var, third_var, fifth_var, seventh_var, ninth_var, eleventh_var, thirteenth_var]
 
-for i, (key, val) in enumerate(chord_dicts.chord_array_dict.items()):
+# for i, (key, val) in enumerate(chord_dicts.chord_array_dict.items()):
 
-    print("i=", i,"key=", key,"val=", val)
-    dic = val
-    for j, l in dic.items():
-        print("j=", j, ", item=", l)
-        if i in [1, 2]:
-            create_radio_btn(
-                chord_search_frame, 
-                my_text=l, 
-                var=vars[i],
-                value=j+1, 
-                row=j+2,
-                col=i+1
-                )
-        else:
-            create_radio_btn(
-                chord_search_frame, 
-                my_text=l, 
-                var=vars[i],
-                value=j, 
-                row=j+2,
-                col=i+1
-                )
+#     print("i=", i,"key=", key,"val=", val)
+#     dic = val
+#     for j, l in dic.items():
+#         print("j=", j, ", item=", l)
+#         if i in [1, 2]:
+#             create_radio_btn(
+#                 chord_search_frame, 
+#                 my_text=l, 
+#                 var=vars[i],
+#                 value=j+1, 
+#                 row=j+2,
+#                 col=i+1
+#                 )
+#         else:
+#             create_radio_btn(
+#                 chord_search_frame, 
+#                 my_text=l, 
+#                 var=vars[i],
+#                 value=j, 
+#                 row=j+2,
+#                 col=i+1
+#                 )
 
-
-play_chord_btn = tk.Button(
-    chord_search_frame, 
-    text='Play Chord', 
-    command=lambda:print('play chord'),
-    anchor='w'
-    )
-play_chord_btn.grid(row=15, column=7, sticky='ew')
+display = ChordSearch(chord_search_frame)
 
 #====Chord progression creator
 """
