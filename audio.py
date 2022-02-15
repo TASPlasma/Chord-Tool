@@ -112,6 +112,52 @@ def chord_name(chord, shift=0):
         
     return name
 
+chords = pd.read_csv(
+    r'C:\Users\Owner\Documents\Chord Project\Chord-Tool\chord_dataset.txt', 
+    sep=' '
+)
+
+# Utility functions used later
+
+def note_dist(a,b):
+    """
+    Inputs: a (the first note)
+    Inputs: b (the second note)
+    Outputs the note 'distance' of two notes, not necessarily a metric
+    for example, note_dist(0, 10)=2
+    the distance will never exceed 6 (the 7 exception is a hack for voice leading)
+    note_dist is a symmetric function; note_dist(a,b)=note_dist(b,a)
+    """
+    if a < 0 or b < 0:
+        return 7
+    c = ((a % 12)-(b % 12)) % 12
+    d = ((b % 12)-(a % 12)) % 12
+    return min(c, d)
+
+def sign(a):
+    """sign function of a real number
+    """
+    if int(a) == 0:
+        return 1
+    else:
+        return int(a/abs(a))
+
+def cartesian_coord(*arrays):
+    """
+    Outputs the cartesian product of arrays
+    """
+    swapper = [j for j in arrays]
+    a = swapper[0]
+    b = swapper[1]
+    swapper[0]=b
+    swapper[1]=a
+    swapped = tuple(swapper)
+    grid = np.meshgrid(*swapped)        
+    coord_list = [entry.ravel() for entry in grid]
+    points = np.vstack(coord_list).T
+    points[:, [1, 0]] = points[:, [0, 1]]
+    return points
+
 # chord |-> the elements of Z/12Z of a chord
 # voicing |-> the elements of Z/12Z of a voicing of a chord
 def keys_of_chord(chord):
@@ -174,3 +220,104 @@ def play_voicing(
     combined.export(clip_folder / 'temp.wav', format = 'wav')
     
     winsound.PlaySound(str(clip_folder / 'temp.wav'), winsound.SND_FILENAME)
+
+# Function that returns index of input chord name
+def chord_finder(chord_name):
+    return chords.loc[chords['name']==chord_name, chords.columns != 'name'].values.flatten()
+
+# if the root is below 4, raise octave up 1
+def voice_correction(voicing):
+    """
+    Ensures voicing is within range of audio clips
+    """
+    if voicing[0] < 4:
+        voicing[0]+=12
+        voicing[1]+=12
+    for i in range(len(voicing)):
+        if voicing[i] < 27 and i > 1:
+            voicing[i]+=12
+        elif voicing[i] > 58:
+            voicing[i]-=12
+        if voicing[i] // 12 > 4:
+            voicing[i] -= 12
+        if voicing[i] // 12 < 2 and i > 2:
+            voicing[i] += 12
+    copy = sorted(voicing)
+    if (copy[len(copy)-1] - copy[len(copy)-2]) > 8:
+        voicing[len(voicing)-1]-=12
+    return voicing
+
+def high_notes(voicing):
+    voicing_highs = []
+    average = 0
+    for note in voicing:
+        if note >= 28:
+            voicing_highs.append(note)
+            average += note
+    average = average/len(voicing_highs)
+    if average == 0:
+        average = max(voicing)
+    return voicing_highs, average
+
+def all_voicings(chord):
+    """
+    Returns a collection of reasonable rootless voicings for a chord
+    """
+    keys = keys_of_chord(chord)
+    octaves = [3,4]
+    n = len(keys)
+    octave_arrays = [octaves]*(n-1)
+    octave_arrays.insert(0, [1])
+    octave_arrays = tuple(octave_arrays)
+
+    voicings = cartesian_coord(*octave_arrays)
+    voicings = [12*voice+keys for voice in voicings]
+        
+    return voicings
+
+def conditional_voicing2(voicing1, chord2):
+    """
+    Computes the average note in voicing1 except any bass notes
+    Considers possible voicings for chord2 and chooses the one
+    whose average is closest to voicing1
+    
+    Inputs: voicing1, the voicing of the first chord
+    Inputs: chord2, the chord following the first chord that needs
+    a voicing
+    
+    Outputs: voicing2, a voicing for chord2
+    """
+    voicing1_highs, average1 = high_notes(voicing1)
+    voicing2 = random_initial_root_voicing(chord2)
+    voicing2_highs, average2 = high_notes(voicing2)
+    # average1 = average1/len(voicing1)
+    # average2 = average2/len(voicing2)
+
+    for voice in all_voicings(chord2):
+        root=voice[0]%12
+        if root < 4:
+            root += 12
+        
+        voice_highs, average = high_notes(voice)
+        #average = average/len(voice)
+        if abs(average1-average) < abs(average1-average2):
+            voicing2 = np.concatenate(([root],voice[1:]))
+            average2 = average
+    return voice_correction(voicing2)
+
+def play_chord_progression(chord_progression):
+    n = len(chord_progression)
+    chord1=chord_finder(chord_progression[0])
+    voicing1 = random_initial_root_voicing(chord1)
+    voicing_prev=voicing1
+    for i in range(1):
+        print(voicing1)
+        play_voicing(chord1, voice=voicing1)
+        for j in range(n-1):
+            chord_prev = chord_finder(chord_progression[j])
+            chord_cur = chord_finder(chord_progression[j+1])
+            voicing_cur = conditional_voicing2(voicing_prev, chord_cur)
+            print(voicing_cur)
+            play_voicing(chord_cur, voice = voicing_cur)
+            voicing_prev = voicing_cur
+        voicing1 = conditional_voicing2(voicing_cur, chord1)

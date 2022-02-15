@@ -15,8 +15,33 @@ def create_radio_btn(frame, my_text, var, value, row, col, width=4):
     return button
 
 class ChordSearch():
-    def __init__(self, frame) -> None:
-        self.frame=frame
+    def __init__(self, window) -> None:
+
+        self.window = window
+
+        self.frame = tk.Frame(window, bg='red')
+        self.title = tk.Label(
+            self.frame, 
+            text='Chord Search', 
+            bg='red'
+            )
+        self.title.grid(row=0, column=4, sticky='ew')
+
+        self.frame.grid(row=0, column=1, sticky='nsew')
+        self.frame.grid_columnconfigure(
+            (1,2,3,4,5,6,7), 
+            weight=1, 
+            uniform='equal'
+            )
+
+        tk.Label(self.frame, text='Root').grid(row=1, column=1, sticky='ew')
+        tk.Label(self.frame, text='3rd').grid(row=1, column=2, sticky='ew')
+        tk.Label(self.frame, text='5th').grid(row=1, column=3, sticky='ew')
+        tk.Label(self.frame, text='7th').grid(row=1, column=4, sticky='ew')
+        tk.Label(self.frame, text='9th').grid(row=1, column=5, sticky='ew')
+        tk.Label(self.frame, text='11th').grid(row=1, column=6, sticky='ew')
+        tk.Label(self.frame, text='13th').grid(row=1, column=7, sticky='ew')
+
         self.root_var = tk.IntVar()
         self.third_var = tk.IntVar()
         self.fifth_var = tk.IntVar()
