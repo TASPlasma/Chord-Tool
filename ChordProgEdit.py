@@ -12,7 +12,7 @@ class ChordProgEditor():
         self.window = window
         self.frame = tk.Frame(self.window, bg='green')
         self.title = tk.Label(self.frame, text='Chord Progression Editor', bg='green')
-        self.title.grid(row=1, column=1)
+        self.title.grid(row=1, column=1, sticky='ew')
 
         self.frame.grid(row=0, column=1, sticky='nsew')
         self.frame.grid_columnconfigure(

@@ -134,6 +134,43 @@ def note_dist(a,b):
     d = ((b % 12)-(a % 12)) % 12
     return min(c, d)
 
+def dissonance(a, b):
+    """
+    Inputs: a, b keys of a voicing, or notes of a chord
+
+    Outputs: dissonance_value, 
+    a subjective value for dissonance between a, b
+    """
+    dist = note_dist(a, b)
+    dissonance_value = 0
+    if dist == 1 or dist == 6:
+        dissonance_value = 2
+    elif dist == 2:
+        dissonance_value = 1
+
+    return dissonance_value
+
+def chord_dissonance(chord):
+    """Inputs: chord, a chord with which the subjective dissonance will
+    be measured.
+
+    Outputs: chord_dissonance_value, 
+    a subjective value for the dissonance of an entire chord
+    """
+
+    notes = keys_of_chord(chord)
+    n = len(notes)
+
+    chord_dissonance_value = 0
+    for i in range(n):
+        for j in range(i, n):
+            if j > i:
+                diss = dissonance(notes[i], notes[j])
+                chord_dissonance_value += diss
+
+    return chord_dissonance_value
+        
+
 def sign(a):
     """sign function of a real number
     """
@@ -167,7 +204,15 @@ def keys_of_chord(chord):
     Example 2: Any octave of E is 4
     """
     chord = np.array(chord)
-    offset = np.array([0, chord[0]+1, chord[0]+5, chord[0]+9, chord[0]+0, chord[0]+4, chord[0]+7])
+    offset = np.array([
+        0, 
+        chord[0]+1, 
+        chord[0]+5, 
+        chord[0]+9, 
+        chord[0]+0, 
+        chord[0]+4, 
+        chord[0]+7
+        ])
     keys = (chord+offset)%12
     del_inds = [i for i in range(3,7) if chord[i] == 0]
     keys=np.delete(keys, del_inds)
@@ -223,7 +268,7 @@ def play_voicing(
 
 # Function that returns index of input chord name
 def chord_finder(chord_name):
-    return chords.loc[chords['name']==chord_name, chords.columns != 'name'].values.flatten()
+    return chords.loc[chords['name']==chord_name, chords.columns != 'name', chords.columns != 'dissonance'].values.flatten()
 
 # if the root is below 4, raise octave up 1
 def voice_correction(voicing):

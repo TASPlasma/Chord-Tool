@@ -1,7 +1,10 @@
+from random import randint
 import tkinter as tk
 import chord_dicts
+import audio
 from ChordSearch import ChordSearch
 from ChordProgEdit import ChordProgEditor
+from RandomChord import RandomChord
 
 window = tk.Tk()
 window.title('Chord Tool')
@@ -12,18 +15,18 @@ e.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
 window.rowconfigure(0,weight=1)
 window.columnconfigure(0, weight=1, uniform='equal')
 
+def random_chord():
+    ind = randint(0, 6948)
+    chord = audio.chords.iloc[ind].values
+    name = chord[-1]
+    chord = chord[:-1]
+    text_var = tk.StringVar()
+    text_var.set(name)
+    tk.Label(window, text=text_var.get()).grid(row=5, column=0, sticky='ew')
+    audio.play_voicing(chord)
+
 def show_frame(frame):
     frame.tkraise()
-
-def create_radio_btn(frame, my_text, var, value, row, col, width=4):
-    tk.Radiobutton(
-        frame, 
-        text=my_text, 
-        variable=var,
-        value=value,
-        width=width, 
-        anchor='w'
-        ).grid(row=row, column=col, sticky='ew')
 
 #====Menu
 """
@@ -68,7 +71,7 @@ rndm_chord_btn = tk.Button(
     menu_frame, 
     text='Play Random Chord', 
     anchor='w',
-    command=lambda:print("hi")
+    command=lambda:show_frame(random_chord_display.frame)
     )
 rndm_chord_btn.grid(row=4, column=0, sticky='ew')
 
@@ -95,5 +98,8 @@ chord_prog_display = ChordProgEditor(window)
 
 #====Frame for voice editing
 voice_edit_frame = tk.Frame(window)
+
+#====Frame for random chord playing
+random_chord_display = RandomChord(window)
 
 window.mainloop()
