@@ -293,8 +293,6 @@ def chord_finder(chord_name):
     df = chords.loc[:, ~chords.columns.isin(['name', 'dissonance'])]
     return df.loc[(chords['name']==chord_name)].values.flatten()
 
-print(chord_finder("Csus2"))
-
 # if the root is below 4, raise octave up 1
 def voice_correction(voicing):
     """
