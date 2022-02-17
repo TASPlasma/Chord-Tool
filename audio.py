@@ -115,7 +115,7 @@ def chord_name(chord, shift=0):
     return name
 
 folder = os.getcwd()
-folder = os.path.join(folder, "Chord-Tool", "chord_dataset.txt")
+folder = os.path.join(folder, "chord_dataset.txt")
 folder = Path(folder)
 
 chords = pd.read_csv(
@@ -268,7 +268,7 @@ def play_voicing(
         voice = random_initial_root_voicing(chord)
 
     folder = os.getcwd()
-    folder = os.path.join(folder, "Chord-Tool", "Rhodes Notes")
+    folder = os.path.join(folder, "Rhodes Notes")
     clip_folder = Path(folder)
     clips = [clip_folder / f'2RhodesNote-0{i}.wav' 
              if i < 10 else clip_folder / f'2RhodesNote-{i}.wav' 
@@ -379,7 +379,6 @@ def play_chord_progression(chord_progression):
     voicing1 = random_initial_root_voicing(chord1)
     voicing_prev=voicing1
     for i in range(1):
-        print(voicing1)
         play_voicing(chord1, voice=voicing1)
         for j in range(n-1):
             chord_prev = chord_finder(chord_progression[j])
