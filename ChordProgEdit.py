@@ -24,11 +24,6 @@ class ChordProgEditor():
         self.txt_boxes = []
 
         for i in range(4):
-            # self.txt = AutocompleteEntry(
-            #     self.frame, 
-            #     width=10, 
-            #     completevalues=audio.chords['name'].tolist()
-            #     )
 
             self.txt = ttk.Combobox(self.frame)
             self.txt['values'] = lst
@@ -37,12 +32,6 @@ class ChordProgEditor():
 
             self.txt.grid(row=2, column=i+1)
             self.txt_boxes.append(self.txt)
-
-        # creating Combobox
-        self.combo_box = ttk.Combobox(self.frame)
-        self.combo_box['values'] = lst
-        self.combo_box.bind('<KeyRelease>', self.check_input)
-        self.combo_box.grid(row=3, column=2)
 
         self.play_btn = tk.Button(
             self.frame, 

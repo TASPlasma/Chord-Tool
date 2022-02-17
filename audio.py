@@ -7,6 +7,8 @@ import sys
 import winsound
 import pydub
 import time
+import pygame
+from playsound import playsound
 from pydub import AudioSegment
 from pathlib import Path
 
@@ -112,8 +114,12 @@ def chord_name(chord, shift=0):
         
     return name
 
+folder = os.getcwd()
+folder = os.path.join(folder, "Chord-Tool", "chord_dataset.txt")
+folder = Path(folder)
+
 chords = pd.read_csv(
-    r'C:\Users\Owner\Documents\Chord Project\Chord-Tool\chord_dataset.txt', 
+    folder, 
     sep=' '
 )
 
@@ -240,16 +246,29 @@ def random_initial_root_voicing(chord):
     g = np.concatenate(([0+oct_cond], g))
     keys = np.concatenate(([keys[0]], keys))
     voice = 12*g+keys
+    voice = voice_correction(voice)
     
     return voice
 
+def playSound(filename):
+    f = open(filename)
+    pygame.mixer.init()
+    pygame.mixer.music.load(filename)
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy(): # check if the file is playing
+        pass
+    pygame.mixer.quit()
+    
+
 def play_voicing(
     chord, 
-    voice=np.array([]), 
-    folder=r"C:\Users\Owner\Documents\Chord Project\Chord-Tool\Rhodes Notes"
+    voice=np.array([])
     ):
     if not voice.any():
         voice = random_initial_root_voicing(chord)
+
+    folder = os.getcwd()
+    folder = os.path.join(folder, "Chord-Tool", "Rhodes Notes")
     clip_folder = Path(folder)
     clips = [clip_folder / f'2RhodesNote-0{i}.wav' 
              if i < 10 else clip_folder / f'2RhodesNote-{i}.wav' 
@@ -262,13 +281,19 @@ def play_voicing(
     
     combined = s+8
     
-    combined.export(clip_folder / 'temp.wav', format = 'wav')
+    out = combined.export(clip_folder / 'temp.wav', format = 'wav')
+    out.close()
     
-    winsound.PlaySound(str(clip_folder / 'temp.wav'), winsound.SND_FILENAME)
+    # winsound.PlaySound(str(clip_folder / 'temp.wav'), winsound.SND_FILENAME)
+    playSound(str(clip_folder / 'temp.wav'))
+    # os.remove(str(clip_folder / 'temp.wav'))
 
 # Function that returns index of input chord name
 def chord_finder(chord_name):
-    return chords.loc[chords['name']==chord_name, chords.columns != 'name', chords.columns != 'dissonance'].values.flatten()
+    df = chords.loc[:, ~chords.columns.isin(['name', 'dissonance'])]
+    return df.loc[(chords['name']==chord_name)].values.flatten()
+
+print(chord_finder("Csus2"))
 
 # if the root is below 4, raise octave up 1
 def voice_correction(voicing):

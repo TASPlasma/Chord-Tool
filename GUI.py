@@ -59,13 +59,13 @@ chord_prog_btn = tk.Button(
     )
 chord_prog_btn.grid(row=2, column=0, sticky='ew')
 
-voice_edit_btn = tk.Button(
-    menu_frame, 
-    text='Voice Editor', 
-    command=lambda:show_frame(voice_edit_frame),
-    anchor='w'
-    )
-voice_edit_btn.grid(row=3, column=0, sticky='ew')
+# voice_edit_btn = tk.Button(
+#     menu_frame, 
+#     text='Voice Editor', 
+#     command=lambda:show_frame(voice_edit_frame),
+#     anchor='w'
+#     )
+# voice_edit_btn.grid(row=3, column=0, sticky='ew')
 
 rndm_chord_btn = tk.Button(
     menu_frame, 
@@ -73,7 +73,7 @@ rndm_chord_btn = tk.Button(
     anchor='w',
     command=lambda:show_frame(random_chord_display.frame)
     )
-rndm_chord_btn.grid(row=4, column=0, sticky='ew')
+rndm_chord_btn.grid(row=3, column=0, sticky='ew')
 
 menu_frame.grid(row=0, column=0, sticky='nsew')
 menu_frame.grid_columnconfigure(0, weight=1, uniform='equal')
@@ -97,7 +97,7 @@ Then for each slot, textboxes for chord, tuple, duration
 chord_prog_display = ChordProgEditor(window)
 
 #====Frame for voice editing
-voice_edit_frame = tk.Frame(window)
+#voice_edit_frame = tk.Frame(window)
 
 #====Frame for random chord playing
 random_chord_display = RandomChord(window)
