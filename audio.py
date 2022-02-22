@@ -1,14 +1,11 @@
-import math
 import pandas as pd
 import numpy as np
 import wave
 import os
 import sys
-import winsound
 import pydub
 import time
 import pygame
-from playsound import playsound
 from pydub import AudioSegment
 from pathlib import Path
 
