@@ -381,7 +381,6 @@ def play_chord_progression(chord_progression):
             chord_prev = chord_finder(chord_progression[j])
             chord_cur = chord_finder(chord_progression[j+1])
             voicing_cur = conditional_voicing2(voicing_prev, chord_cur)
-            print(voicing_cur)
             play_voicing(chord_cur, voice = voicing_cur)
             voicing_prev = voicing_cur
         voicing1 = conditional_voicing2(voicing_cur, chord1)
