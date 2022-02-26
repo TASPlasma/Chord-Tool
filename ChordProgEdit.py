@@ -11,8 +11,8 @@ class ChordProgEditor():
     def __init__(self, window):
         self.window = window
         self.frame = tk.Frame(self.window, bg='green')
-        self.title = tk.Label(self.frame, text='Chord Progression Editor', bg='green')
-        self.title.grid(row=1, column=1, sticky='ew')
+        self.title = tk.Label(self.frame, text='Chord Progression Editor', bg='green', anchor='w')
+        self.title.grid(row=1, column=2, sticky='ew')
 
         self.frame.grid(row=0, column=1, sticky='nsew')
         self.frame.grid_columnconfigure(
@@ -55,7 +55,7 @@ class ChordProgEditor():
         value = event.widget.get()
 
         if value == '':
-            self.txt['values'] = audio.chords.head['name'].tolist()
+            self.txt['values'] = audio.chords['name'].head().tolist()
         else:
             data = []
             for item in lst:

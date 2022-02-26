@@ -247,6 +247,24 @@ def random_initial_root_voicing(chord):
     
     return voice
 
+def basic_voicing(chord):
+    offset = np.array([
+        0, 
+        chord[0]+1, 
+        chord[0]+5, 
+        chord[0]+9, 
+        chord[0]+0, 
+        chord[0]+4, 
+        chord[0]+7
+        ])
+    notes = chord+offset+np.array([0, 36, 36, 36, 48, 48, 48])
+    del_inds = [i for i in range(3,7) if chord[i] == 0]
+    voicing=np.delete(notes, del_inds)
+    voicing = voice_correction(voicing)
+    return voicing
+
+
+
 def playSound(filename):
     f = open(filename)
     pygame.mixer.init()
@@ -281,9 +299,7 @@ def play_voicing(
     out = combined.export(clip_folder / 'temp.wav', format = 'wav')
     out.close()
     
-    # winsound.PlaySound(str(clip_folder / 'temp.wav'), winsound.SND_FILENAME)
     playSound(str(clip_folder / 'temp.wav'))
-    # os.remove(str(clip_folder / 'temp.wav'))
 
 # Function that returns index of input chord name
 def chord_finder(chord_name):
@@ -353,7 +369,7 @@ def conditional_voicing2(voicing1, chord2):
     Outputs: voicing2, a voicing for chord2
     """
     voicing1_highs, average1 = high_notes(voicing1)
-    voicing2 = random_initial_root_voicing(chord2)
+    voicing2 = basic_voicing(chord2)
     voicing2_highs, average2 = high_notes(voicing2)
     # average1 = average1/len(voicing1)
     # average2 = average2/len(voicing2)
@@ -384,3 +400,7 @@ def play_chord_progression(chord_progression):
             play_voicing(chord_cur, voice = voicing_cur)
             voicing_prev = voicing_cur
         voicing1 = conditional_voicing2(voicing_cur, chord1)
+
+# chord = chord_finder("Em 7 9 11")
+# voicing = basic_voicing(chord)
+# play_voicing(chord, voice = voicing)
