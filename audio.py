@@ -231,15 +231,19 @@ def keys_of_voicing(voicing):
 
 # chord-tuple |-> voicing of chord such that lowest note is root, remaining notes are chosen randomly
 def random_initial_root_voicing(chord):
+
     oct_cond = 0
     
     keys = keys_of_chord(chord=chord)
     
-    if keys[0] <= 3:
+    if keys[0] <= 9:
         oct_cond = 1
     
     l = len(keys)
-    g=[1+oct_cond if n == keys[0] else 3+oct_cond if n == keys[2] else np.random.randint(3, 5) for n in keys]
+    if chord[2] != 2:
+        g=[1+oct_cond if n == keys[0] else 4 if n == keys[2] else np.random.randint(3, 5) for n in keys]
+    else:
+        g=[1+oct_cond if n == keys[0] else 3+oct_cond if n == keys[2] else np.random.randint(3, 5) for n in keys]
     g = np.concatenate(([0+oct_cond], g))
     keys = np.concatenate(([keys[0]], keys))
     voice = 12*g+keys
@@ -324,8 +328,9 @@ def voice_correction(voicing):
         if voicing[i] // 12 < 2 and i > 2:
             voicing[i] += 12
     copy = sorted(voicing)
-    if (copy[len(copy)-1] - copy[len(copy)-2]) > 8:
+    if (copy[len(copy)-1] - copy[len(copy)-2]) > 5:
         voicing[len(voicing)-1]-=12
+
     return voicing
 
 def high_notes(voicing):
