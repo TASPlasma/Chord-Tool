@@ -1,7 +1,7 @@
 import tkinter as tk
 import chord_dicts
 from chord_dicts import chord_name
-from audio import play_voicing
+import audio
 
 def create_radio_btn(frame, my_text, var, value, row, col, width=4):
     button = tk.Radiobutton(
@@ -110,7 +110,7 @@ class ChordSearch():
         self.play_chord_btn = tk.Button(
             self.frame, 
             text='Play Chord', 
-            command=lambda:play_voicing(self.play_chord_cmd()),
+            command=lambda:audio.play_voicing(self.play_chord_cmd()),
             anchor='w'
             )
         self.play_chord_btn.grid(row=15, column=7, sticky='ew')
@@ -197,6 +197,15 @@ class ChordSearch():
     def play_chord_cmd(self):
 
         self.chord_correction()
-        self.chord=[var.get() for var in self.vars]      
+        self.chord=[var.get() for var in self.vars]     
+
+        text_var = tk.StringVar()
+        text_var.set(audio.chord_name(self.chord))
+        tk.Label(self.frame, text=text_var.get()).grid(
+            row=15, 
+            column=5, 
+            sticky='ew'
+            )
+
         return self.chord
         
