@@ -94,4 +94,4 @@ class RandomChord():
             column=i, 
             sticky='ew'
             )
-        audio.play_voicing(self.chord)
+        audio.play_voicing(self.chord, voice=audio.basic_voicing(self.chord))
