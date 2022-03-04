@@ -165,6 +165,11 @@ def chord_dissonance(chord):
     n = len(notes)
 
     chord_dissonance_value = 0
+
+    #exception, augmented chords have dissonance
+    if chord[1] == 3 and chord[2] == 3:
+        chord_dissonance_value = 1
+    
     for i in range(n):
         for j in range(i, n):
             if j > i:
