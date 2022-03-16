@@ -2,9 +2,9 @@ from random import randint
 import tkinter as tk
 import chord_dicts
 import audio
-from ChordSearch import ChordSearch
-from ChordProgEdit import ChordProgEditor
-from RandomChord import RandomChord
+from chord_search import ChordSearch
+from chord_prog_Edit import ChordProgEditor
+from random_chord import RandomChord
 
 window = tk.Tk()
 window.title('Chord Tool')
