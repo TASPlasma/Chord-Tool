@@ -1,6 +1,5 @@
 from random import randint
 import tkinter as tk
-import chord_dicts
 import audio
 from chord_search import ChordSearch
 from chord_prog_edit import ChordProgEditor

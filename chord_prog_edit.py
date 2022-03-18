@@ -1,7 +1,6 @@
 import tkinter as tk
 import audio
 from tkinter import ttk
-from ttkwidgets.autocomplete import AutocompleteEntry
 
 lst = audio.chords['name'].tolist()
 

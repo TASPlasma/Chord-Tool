@@ -25,7 +25,6 @@ Requirements:
 5. pydub
 6. pygame
 7. ttk
-8. ttkwidgets
 
 Download all files, save them to a folder called Chord-Tool. Run gui.py from the Chord-Tool folder.
 

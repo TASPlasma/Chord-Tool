@@ -3,7 +3,6 @@ import numpy as np
 import wave
 import os
 import sys
-import pydub
 import time
 import pygame
 from pydub import AudioSegment
@@ -256,6 +255,7 @@ def random_initial_root_voicing(chord):
     
     return voice
 
+# Creates a 'stacked thirds' voicing
 def basic_voicing(chord):
     offset = np.array([
         0, 
@@ -315,7 +315,6 @@ def chord_finder(chord_name):
     df = chords.loc[:, ~chords.columns.isin(['name', 'dissonance'])]
     return df.loc[(chords['name']==chord_name)].values.flatten()
 
-# if the root is below 4, raise octave up 1
 def voice_correction(voicing):
     """
     Ensures voicing is within range of audio clips
@@ -410,7 +409,3 @@ def play_chord_progression(chord_progression):
             play_voicing(chord_cur, voice = voicing_cur)
             voicing_prev = voicing_cur
         voicing1 = conditional_voicing2(voicing_cur, chord1)
-
-# chord = chord_finder("Em 7 9 11")
-# voicing = basic_voicing(chord)
-# play_voicing(chord, voice = voicing)

@@ -1,6 +1,5 @@
 import tkinter as tk
 import chord_dicts
-from chord_dicts import chord_name
 import audio
 
 def create_radio_btn(frame, my_text, var, value, row, col, width=4):
