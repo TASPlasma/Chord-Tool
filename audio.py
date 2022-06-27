@@ -274,7 +274,7 @@ def basic_voicing(chord):
 
 
 
-def playSound(filename):
+def play_sound(filename):
     f = open(filename)
     pygame.mixer.init()
     pygame.mixer.music.load(filename)
@@ -308,7 +308,7 @@ def play_voicing(
     out = combined.export(clip_folder / 'temp.wav', format = 'wav')
     out.close()
     
-    playSound(str(clip_folder / 'temp.wav'))
+    play_sound(str(clip_folder / 'temp.wav'))
 
 # Function that returns index of input chord name
 def chord_finder(chord_name):
@@ -347,7 +347,32 @@ def high_notes(voicing):
     average = average/len(voicing_highs)
     if average == 0:
         average = max(voicing)
-    return voicing_highs, average
+    return voicing_highs
+
+def voicing_stat(voicing, metric: str):
+    """
+    Outputs a statistic about the voicing,
+    metric can be 'max', 'min', 'range', 'avg'
+    """
+    max = np.max(voicing)
+    min = np.min(voicing[1:])
+    avg = 0
+    count = 0
+    for note in voicing:
+        if note >= 28:
+            avg += note
+            count += 1
+    if avg == 0:
+        avg = max(voicing)
+    else:
+        avg = avg/count
+    stat_dict = {
+        "max": max,
+        "min": min,
+        "range": max-min,
+        "avg": avg
+        }
+    return stat_dict[metric]
 
 def all_voicings(chord):
     """
@@ -377,22 +402,28 @@ def conditional_voicing2(voicing1, chord2):
     
     Outputs: voicing2, a voicing for chord2
     """
-    voicing1_highs, average1 = high_notes(voicing1)
+    avg1 = voicing_stat(voicing1, "avg")
+    # the best current choice for voicing2
     voicing2 = basic_voicing(chord2)
-    voicing2_highs, average2 = high_notes(voicing2)
-    # average1 = average1/len(voicing1)
-    # average2 = average2/len(voicing2)
+    avg2 = voicing_stat(voicing2, "avg")
+    ran2 = voicing_stat(voicing2, "range")
 
+    # optimization objective is to minimize |avg1-avg|+ran
     for voice in all_voicings(chord2):
         root=voice[0]%12
         if root < 4:
             root += 12
         
-        voice_highs, average = high_notes(voice)
-        #average = average/len(voice)
-        if abs(average1-average) < abs(average1-average2):
+        avg = voicing_stat(voice, "avg")
+        ran = voicing_stat(voice, "range")
+
+        # checks if the current voice is 'closer' to the first voicing
+        # if true, we have found a new best voicing
+        if abs(avg1-avg)+ran < abs(avg1-avg2)+ran2:
+            # resets best current choice for voicing2 and its stats
             voicing2 = np.concatenate(([root],voice[1:]))
-            average2 = average
+            avg2 = avg
+            ran2 = ran
     return voice_correction(voicing2)
 
 def play_chord_progression(chord_progression):
