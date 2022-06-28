@@ -40,15 +40,16 @@ class ChordProgEditor():
         self.play_btn.grid(row=4, column=4, sticky='ew')
 
     def update_chord_prog(self):
-        self.chord_prog =[]
+        self.chord_prog = []
         for box in self.txt_boxes:
             self.chord_prog.append(box.get())
+            print(box.get())
 
         return self.chord_prog
 
     def play_cmd(self):
         self.prog = self.update_chord_prog()
-        audio.play_chord_progression(self.prog)
+        audio.play_chord_progression2(self.prog)
 
     def check_input(self, event):
         value = event.widget.get()

@@ -275,13 +275,14 @@ def basic_voicing(chord):
 
 
 def play_sound(filename):
-    f = open(filename)
-    pygame.mixer.init()
-    pygame.mixer.music.load(filename)
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy(): # check if the file is playing
-        pass
-    pygame.mixer.quit()
+    with open(filename) as f:
+        pygame.mixer.init()
+        pygame.mixer.music.load(filename)
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy(): # check if the file is playing
+            pass
+        pygame.mixer.music.unload()
+        pygame.mixer.quit()
     
 
 def play_voicing(
@@ -426,6 +427,95 @@ def conditional_voicing2(voicing1, chord2):
             ran2 = ran
     return voice_correction(voicing2)
 
+def voice_prog_completion(chord_prog, voice_prog):
+    """
+    Input(s): 
+    chord_prog, a chord progression
+    voice_prog, an incomplete sequence of voicings for chord_prog
+    Outputs:
+    voice_prog, the completed sequence of voicings for chord_prog
+    """
+    if type(chord_prog[0]) == str:
+        chord_prog = [chord_finder(chord) for chord in chord_prog]
+    n = len(chord_prog)
+    k = len(voice_prog)
+    if k == 0:
+        voicing_prev = basic_voicing(chord_prog[0])
+    else:
+        voicing_prev = voice_prog[-1]
+    for j in range(n-k):
+        # we have voice_prog[0], ..., voice_prog[k-1]
+        # we need voice_prog[k], ..., voice_prog[n-1], which is n-k many items
+        # voice_prog[k] = cond_voicing(voice_prog[k-1], chord_prog[k])
+        # voice_prog[k +1] = cond_voicing(voice_prog[k-1 +1], chord_prog[k +1])
+        # voice_prog[k +j] = cond_voicing(voice_prog[k-1 +j], chord_prog[k +j])
+        chord_cur = chord_prog[k+j]
+        voicing_cur = conditional_voicing2(voicing_prev, chord_cur)
+        voice_prog=voice_prog+[voicing_cur]
+        voicing_prev = voicing_cur
+    return voice_prog
+
+def file_from_audio_segment(segment):
+    folder = os.getcwd()
+    folder = os.path.join(folder, "Rhodes Notes")
+    clip_folder = Path(folder)
+    out = segment.export(clip_folder / 'progression.wav', format = 'wav')
+    out.close()
+    return str(clip_folder / 'progression.wav')
+
+# Returns a pydub AudioSegment of a voicing
+def audio_from_voicing(chord,
+                       voice=[],
+                       ntuple = 4,
+                       duration = 4, 
+                       tempo = 120, 
+                      ):
+    """
+    Returns an audio segment from a chord and an optional voicing
+    Input(s): 
+    chord, a chord
+    voice, a voicing for the chord, defaults to a stacked thirds voicing
+    ntuple, the tuplet
+    duration, how long the chord is played
+    tempo, the tempo
+    A chord will be played for some duration with some tuplet at some tempo
+    The duration is how long the chord is audible
+    The tuplet is how long the chord+silence lasts
+    Thus the total duration of the audio segment should be ntuplet*tempo
+    """
+    if len(voice) == 0:
+        voice = basic_voicing(chord)
+    folder = os.getcwd()
+    folder = os.path.join(folder, "Rhodes Notes")
+    clip_folder = Path(folder)
+    clip_folder = Path(folder)
+    clips = [clip_folder / f'2RhodesNote-0{i}.wav' 
+             if i < 10 else clip_folder / f'2RhodesNote-{i}.wav' 
+             for i in voice]
+    sounds = [AudioSegment.from_file(clip, format="wav")-20 
+              for i, clip in enumerate(clips)]
+    
+    #merges sound clips into one sound
+    s = sounds[0]
+    for i in range(len(sounds)-1):
+        s = s.overlay(sounds[i+1]-2, position = i*50)
+    s = s+10
+    
+    #converts tempo to ms/beat
+    #needs exception handling or something
+    total_dur = (60000/tempo)*(4/ntuple) #can't be less than the duration
+    duration = dur_of_tuple(duration, tempo)
+    duration = min(duration, 2000) #ensures duration does not excede piano wav length
+    
+    if total_dur-duration <= 0.0:
+        s = s[:duration]
+    else:
+        # the duration is less than the total duration, thus create silence
+        # the silence has length total_duration - duration
+        silence = AudioSegment.silent(duration=(total_dur-duration))
+        s = s[:duration]+silence
+    return s
+
 def play_chord_progression(chord_progression):
     n = len(chord_progression)
     chord1=chord_finder(chord_progression[0])
@@ -440,3 +530,45 @@ def play_chord_progression(chord_progression):
             play_voicing(chord_cur, voice = voicing_cur)
             voicing_prev = voicing_cur
         voicing1 = conditional_voicing2(voicing_cur, chord1)
+
+def dur_of_tuple(ntuple, tempo):
+    """
+    Returns the duration (in milliseconds) of a ntuple at a given tempo
+    """
+    return (60000/tempo)*(4/ntuple)
+
+def play_chord_progression2(chord_prog, voice_prog=[], ntuples=np.array([]), durations=np.array([]), tempo=120):
+    """
+    Inputs: 
+    chord_prog, an array of names of chords
+    voice_prog, an array of voicings for each chord
+    ntuples, an array of tuplet sizes for each chord
+    durations, an array of durations (in tuple form) for each chord
+    tempo, the desired tempo for playback
+    
+    Outputs:
+    array of audio segments, summing the array gives audio for the chord progression"""
+    
+    folder = os.getcwd()
+    folder = os.path.join(folder, "Rhodes Notes")
+    clip_folder = Path(folder)
+    if type(chord_prog[0]) == str:
+        chord_prog = [chord_finder(chord) for chord in chord_prog]
+        
+    if len(voice_prog) < len(chord_prog):
+        voice_prog = voice_prog_completion(chord_prog, voice_prog)
+    if len(ntuples) < len(chord_prog):
+        ntuples = np.concatenate([ntuples,[1 for _ in chord_prog[len(ntuples):]]])
+    if len(durations) < len(chord_prog):
+        durations = np.concatenate([durations,[1 for _ in chord_prog[len(durations):]]])
+
+    chord_audio = [audio_from_voicing(chord_prog[i], voice_prog[i], ntuples[i], durations[i], tempo) 
+                   for i in range(len(chord_prog))]
+    s = chord_audio[0]
+    for i in range(len(chord_audio)-1):
+        s = s + chord_audio[i+1]
+    
+    out = s.export(clip_folder / 'progression.wav', format='wav')
+    out.close()
+
+    play_sound(str(clip_folder / 'progression.wav'))
