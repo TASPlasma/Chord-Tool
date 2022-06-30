@@ -1,12 +1,10 @@
 import pandas as pd
 import numpy as np
-import wave
 import os
-import sys
-import time
 import pygame
 from pydub import AudioSegment
 from pathlib import Path
+from mido import Message, MidiFile, MidiTrack
 
 # C = 0, C# = 1, etc.
 roots = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
@@ -320,9 +318,20 @@ def voice_correction(voicing):
     """
     Ensures voicing is within range of audio clips
     """
+    copy = sorted(voicing)
+    argsorted = np.argsort(voicing)
+
+    # ensures highest notes are close
+    if (copy[-1] - copy[-2]) > 6:
+        voicing[argsorted[-1]]-=12
+
+    # ensures lowest notes are far
+    if (copy[1] - copy[0]) < 7:
+        voicing[argsorted[1]] += 12
+
     if voicing[0] < 4:
         voicing[0]+=12
-        voicing[1]+=12
+        #voicing[1]+=12
     for i in range(len(voicing)):
         if voicing[i] < 27 and i > 1:
             voicing[i]+=12
@@ -332,9 +341,6 @@ def voice_correction(voicing):
             voicing[i] -= 12
         if voicing[i] // 12 < 2 and i > 2:
             voicing[i] += 12
-    copy = sorted(voicing)
-    if (copy[len(copy)-1] - copy[len(copy)-2]) > 5:
-        voicing[len(voicing)-1]-=12
 
     return voicing
 
@@ -422,12 +428,12 @@ def conditional_voicing2(voicing1, chord2):
         # if true, we have found a new best voicing
         if abs(avg1-avg)+ran < abs(avg1-avg2)+ran2:
             # resets best current choice for voicing2 and its stats
-            voicing2 = np.concatenate(([root],voice[1:]))
+            voicing2 = np.concatenate(([root], voice[1:]))
             avg2 = avg
             ran2 = ran
     return voice_correction(voicing2)
 
-def voice_prog_completion(chord_prog, voice_prog):
+def voice_prog_completion(chord_prog, voice_prog=None):
     """
     Input(s): 
     chord_prog, a chord progression
@@ -437,10 +443,14 @@ def voice_prog_completion(chord_prog, voice_prog):
     """
     if type(chord_prog[0]) == str:
         chord_prog = [chord_finder(chord) for chord in chord_prog]
+    
+    if not voice_prog:
+        voice_prog = []
+
     n = len(chord_prog)
     k = len(voice_prog)
     if k == 0:
-        voicing_prev = basic_voicing(chord_prog[0])
+        voicing_prev = random_initial_root_voicing(chord_prog[0])
     else:
         voicing_prev = voice_prog[-1]
     for j in range(n-k):
@@ -455,6 +465,28 @@ def voice_prog_completion(chord_prog, voice_prog):
         voicing_prev = voicing_cur
     return voice_prog
 
+def complete_durations(chord_prog, durations=None):
+    """
+    Completes a sequence of durations
+    """
+    if not durations:
+        durations = []
+
+    durations = durations + [1 for _ in chord_prog[len(durations):]]
+
+    return durations
+
+def complete_ntuples(chord_prog, ntuples=None):
+    """
+    Completes a sequence of ntuples
+    """
+    if not ntuples:
+        ntuples = []
+
+    ntuples = ntuples + [1 for _ in chord_prog[len(ntuples):]]
+    
+    return ntuples
+
 def file_from_audio_segment(segment):
     folder = os.getcwd()
     folder = os.path.join(folder, "Rhodes Notes")
@@ -465,7 +497,7 @@ def file_from_audio_segment(segment):
 
 # Returns a pydub AudioSegment of a voicing
 def audio_from_voicing(chord,
-                       voice=[],
+                       voice=None,
                        ntuple = 4,
                        duration = 4, 
                        tempo = 120, 
@@ -483,8 +515,9 @@ def audio_from_voicing(chord,
     The tuplet is how long the chord+silence lasts
     Thus the total duration of the audio segment should be ntuplet*tempo
     """
-    if len(voice) == 0:
-        voice = basic_voicing(chord)
+    if voice is None:
+        voice = random_initial_root_voicing(chord)
+
     folder = os.getcwd()
     folder = os.path.join(folder, "Rhodes Notes")
     clip_folder = Path(folder)
@@ -537,7 +570,7 @@ def dur_of_tuple(ntuple, tempo):
     """
     return (60000/tempo)*(4/ntuple)
 
-def play_chord_progression2(chord_prog, voice_prog=[], ntuples=np.array([]), durations=np.array([]), tempo=120):
+def play_chord_progression2(chord_prog, voice_prog=None, ntuples=None, durations=None, tempo=120):
     """
     Inputs: 
     chord_prog, an array of names of chords
@@ -552,15 +585,23 @@ def play_chord_progression2(chord_prog, voice_prog=[], ntuples=np.array([]), dur
     folder = os.getcwd()
     folder = os.path.join(folder, "Rhodes Notes")
     clip_folder = Path(folder)
+
     if type(chord_prog[0]) == str:
         chord_prog = [chord_finder(chord) for chord in chord_prog]
+
+    if voice_prog is None:
+        voice_prog = []
+    if durations is None:
+        durations = []
+    if ntuples is None:
+        ntuples = []
         
     if len(voice_prog) < len(chord_prog):
         voice_prog = voice_prog_completion(chord_prog, voice_prog)
     if len(ntuples) < len(chord_prog):
-        ntuples = np.concatenate([ntuples,[1 for _ in chord_prog[len(ntuples):]]])
+        ntuples = complete_ntuples(chord_prog, ntuples)
     if len(durations) < len(chord_prog):
-        durations = np.concatenate([durations,[1 for _ in chord_prog[len(durations):]]])
+        durations = complete_durations(chord_prog, durations)
 
     chord_audio = [audio_from_voicing(chord_prog[i], voice_prog[i], ntuples[i], durations[i], tempo) 
                    for i in range(len(chord_prog))]
@@ -572,3 +613,45 @@ def play_chord_progression2(chord_prog, voice_prog=[], ntuples=np.array([]), dur
     out.close()
 
     play_sound(str(clip_folder / 'progression.wav'))
+
+def midi_file_from_chord_prog(chord_prog, voice_prog=None, durations=None, ntuples=None):
+    mid = MidiFile()
+    track = MidiTrack()
+    mid.tracks.append(track)
+
+    if voice_prog is None:
+        voice_prog = []
+    if durations is None:
+        durations = []
+    if ntuples is None:
+        ntuples = []
+
+    if len(voice_prog) < len(chord_prog):
+        voice_prog = voice_prog_completion(chord_prog, voice_prog)
+    if len(ntuples) < len(chord_prog):
+        ntuples = complete_ntuples(chord_prog, ntuples)
+    if len(durations) < len(chord_prog):
+        durations = complete_durations(chord_prog, durations)
+
+    for j, voice in enumerate(voice_prog):
+        #voice is a tuple of notes
+        if j == 0:
+            on_messages = [Message('note_on', note=note, velocity=100, time=0) for note in voice]
+        else:
+            on_messages = [Message('note_on', note=voice[0], velocity=100, time=480) 
+            if i == 0 else Message('note_on', note=note, velocity=100, time=0) 
+            for i, note in enumerate(voice)]
+        
+        off_messages = [Message('note_off', note=voice[0], velocity=100, time=480) 
+            if i == 0 else Message('note_off', note=note, velocity=100, time=0) 
+            for i, note in enumerate(voice)]
+        
+        # turn on notes in voice
+        for message in on_messages:
+            track.append(message)
+
+        # turn off notes in voice
+        for message in off_messages:
+            track.append(message)
+
+    mid.save('chord_prog.mid')
