@@ -636,14 +636,14 @@ def midi_file_from_chord_prog(chord_prog, voice_prog=None, durations=None, ntupl
     for j, voice in enumerate(voice_prog):
         #voice is a tuple of notes
         if j == 0:
-            on_messages = [Message('note_on', note=note, velocity=100, time=0) for note in voice]
+            on_messages = [Message('note_on', note=note+24, velocity=100, time=0) for note in voice]
         else:
-            on_messages = [Message('note_on', note=voice[0], velocity=100, time=480) 
-            if i == 0 else Message('note_on', note=note, velocity=100, time=0) 
+            on_messages = [Message('note_on', note=voice[0]+24, velocity=100, time=0) 
+            if i == 0 else Message('note_on', note=note+24, velocity=100, time=0) 
             for i, note in enumerate(voice)]
         
-        off_messages = [Message('note_off', note=voice[0], velocity=100, time=480) 
-            if i == 0 else Message('note_off', note=note, velocity=100, time=0) 
+        off_messages = [Message('note_off', note=voice[0]+24, velocity=100, time=1920) 
+            if i == 0 else Message('note_off', note=note+24, velocity=100, time=0) 
             for i, note in enumerate(voice)]
         
         # turn on notes in voice
