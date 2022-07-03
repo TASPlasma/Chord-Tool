@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
 import os
+import ffmpeg
 import pygame
+from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 from pathlib import Path
 from mido import Message, MidiFile, MidiTrack
@@ -238,7 +240,7 @@ def random_initial_root_voicing(chord):
     
     keys = keys_of_chord(chord=chord)
     
-    if keys[0] <= 9:
+    if keys[0] <= 6:
         oct_cond = 1
     
     l = len(keys)
@@ -325,7 +327,7 @@ def voice_correction(voicing):
     if (copy[-1] - copy[-2]) > 6:
         voicing[argsorted[-1]]-=12
 
-    # ensures lowest notes are far
+    # ensures lowest notes are distant
     if (copy[1] - copy[0]) < 7:
         voicing[argsorted[1]] += 12
 
@@ -334,7 +336,7 @@ def voice_correction(voicing):
         #voicing[1]+=12
     for i in range(len(voicing)):
         if voicing[i] < 27 and i > 1:
-            voicing[i]+=12
+            voicing[i]+=12 #this adjustment might be useless/limiting
         elif voicing[i] > 58:
             voicing[i]-=12
         if voicing[i] // 12 > 4:
@@ -450,7 +452,7 @@ def voice_prog_completion(chord_prog, voice_prog=None):
     n = len(chord_prog)
     k = len(voice_prog)
     if k == 0:
-        voicing_prev = random_initial_root_voicing(chord_prog[0])
+        voicing_prev = basic_voicing(chord_prog[0])
     else:
         voicing_prev = voice_prog[-1]
     for j in range(n-k):
@@ -612,7 +614,7 @@ def play_chord_progression2(chord_prog, voice_prog=None, ntuples=None, durations
     out = s.export(clip_folder / 'progression.wav', format='wav')
     out.close()
 
-    play_sound(str(clip_folder / 'progression.wav'))
+    #play_sound(str(clip_folder / 'progression.wav'))
 
 def midi_file_from_chord_prog(chord_prog, voice_prog=None, durations=None, ntuples=None):
     mid = MidiFile()
@@ -655,3 +657,154 @@ def midi_file_from_chord_prog(chord_prog, voice_prog=None, durations=None, ntupl
             track.append(message)
 
     mid.save('chord_prog.mid')
+
+def voice_visualization(chord: list, voicing: list=None) -> None:
+    """
+    Input(s):
+    chord
+    voicing, a voice of the chord
+    Creates an image of a piano with the notes of the voicing played
+    """
+    if voicing is None:
+        voicing = basic_voicing(chord)
+
+    #voicing = voicing.tolist()
+
+    w1 = 35.5 # width of white key at top
+    w2 = 20.6 # width of black key = 23.5/13.7 = w1/w2 => w2 = 13.7/23.5*w1 = 1/1.72*w1
+    w3 = 21# width of white key at top = w1 - 7/10*w2 = 22.75
+
+    # first create 720p black background
+    img = Image.new(mode="RGB", size=(1280, 720), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # pairs [m, n], corresponds to the horizontal value m*w2+n*w3
+    # used to get the coordinates of the black keys, the values were adjusted due to rounding errors
+    black_coords = [[0, 1.1], [1, 2.2], [2.1, 4], [3.1, 5], [4.1, 6]]
+    def pair_coords_to_coords(coord: list, w2: int, w3: int) -> int:
+        return w2*coord[0]+w3*coord[1]
+
+    def create_piano_segment(coords: list, num: int, w_k, b_k, w2, w3):
+        """
+        Inputs: 
+        coords, a list of coordinates for the black keys
+        num, a starting horizontal value for the octave
+        w_k, the number of white keys
+        b_k, the number of black keys
+        Create one octave from C to B, which has total width 7*w1
+        """
+        
+        # creates white notes
+        for i in range(w_k):
+            draw.rectangle((1+w1*i+(7*w1)*num, 540, 1+w1+w1*i+(7*w1)*num, 180), fill = "white", outline="black")
+
+        # creates black notes
+        for i in range(b_k):
+            coord = pair_coords_to_coords(black_coords[i], w2, w3)
+            coord = num*(7*w1) + coord
+            draw.rectangle((coord, 180, coord+w2, 396), fill ="black", outline="gray")
+
+    # draws 5 octaves, C to B
+    for i in range(5):
+        create_piano_segment(black_coords, i, 7, 5, w2, w3)
+
+    # draws one final C key
+    draw.rectangle((35*w1, 540, 36*w1, 180), fill = "white", outline="gray")
+
+    black_notes = [1, 3, 6, 8, 10]
+    white_note_dict = {'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6}
+    black_note_dict = {'C#': 0, 'Eb': 1, 'F#': 2, 'G#': 3, 'Bb': 4}
+    root_dict = {
+    0: 'C',
+    1: 'C#',
+    2: 'D',
+    3: 'Eb',
+    4: 'E',
+    5: 'F',
+    6: 'F#',
+    7: 'G',
+    8: 'G#',
+    9: 'A',
+    10: 'Bb',
+    11: 'B'
+    }
+
+    # highlights notes being played
+    for voice in voicing:
+        # voice is a numerical note
+        note = root_dict[voice % 12] # char, like an E for example
+        octave = voice // 12 # technically the octave offset by 2 from a standard piano
+        
+        
+        if voice % 12 in black_notes:
+            # draw note on black key
+            font = ImageFont.truetype("./arial.ttf", 13)
+            text = f"{note}\n {octave+2}"
+            value = black_note_dict[note] # numerical black key in the octave
+            black_coord = black_coords[value]
+            coord = pair_coords_to_coords(black_coord, w2, w3)
+            coord = coord + (octave)*7*w1
+            draw.rectangle((coord, 396, coord+w2, 250), fill="pink", outline="blue")
+            draw.text((coord+2, 323), text, (0, 0, 0), font=font)
+
+        else:
+            # fill in note on white key
+            font = ImageFont.truetype("./arial.ttf", 18)
+            text = f"{note}{octave+2}"
+            value = white_note_dict[note] # numerical white key
+            coord = (octave)*7*w1 + value*w1
+            draw.rectangle((coord+1, 540, coord+w1+1, 396), fill = "pink", outline='blue')
+            draw.text((coord+7, 468), text, (0, 0, 0), font=font)
+
+    return img
+
+def chord_prog_vis(chord_prog: list, voice_prog: list=None):
+    """
+    Inputs:
+    chord_prog, a chord progression
+    voice_prog, a sequence of voicing for each chord
+    Outputs photos of each chord
+    """
+    copies = 60
+    if type(chord_prog[0]) == str:
+        chord_prog = [chord_finder(chord) for chord in chord_prog]
+    
+    if voice_prog is None:
+        voice_prog = voice_prog_completion(chord_prog)
+    if len(voice_prog) < len(chord_prog):
+        voice_prog = voice_prog_completion(chord_prog, voice_prog=voice_prog)
+
+    play_chord_progression2(chord_prog=chord_prog, voice_prog=voice_prog)
+
+    #img_folder = os.getcwd()
+    #img_folder = os.path.join(img_folder, "imgs")
+    img_folder = Path("imgs")
+    #audio_folder = os.getcwd()
+    #audio_folder = os.path.join(audio_folder, "Rhodes Notes")
+    audio_folder = Path("Rhodes Notes")
+
+    with open("jpgs_text.txt", "w") as file:
+        for i, voicing in enumerate(voice_prog):
+            img = voice_visualization(chord_prog[i], voicing=voicing)
+            for j in range(copies):
+                img_path = f"imgs/chord{i}copy{j+1}.jpg"
+                img.save(img_path)
+                if i == len(voice_prog)-1 and j == copies-1:
+                    file.write(f"file \'{img_path}\'")
+                else:
+                    file.write(f"file \'{img_path}\'\n")
+
+
+
+
+    input_audio = ffmpeg.input(audio_folder / "progression.wav")
+    (
+        ffmpeg
+        .input('jpgs_text.txt', f='concat', safe='0', r='30')
+        .output('movie.mp4', vcodec='libx264')
+        .run(overwrite_output=True)
+    )
+    input_video = ffmpeg.input('movie.mp4')
+    ffmpeg.concat(input_video, input_audio, v=1, a=1).output('movie.mp4').run(overwrite_output=True)
+
+chord_prog_vis(["Bsus2 7", "Em #5 11", "C#m b13", "G#sus2 maj7"])
