@@ -1,6 +1,9 @@
 import tkinter as tk
 import chord_dicts
 import audio
+import os
+import pygame
+from pathlib import Path
 
 def create_radio_btn(frame, my_text, var, value, row, col, width=4):
     button = tk.Radiobutton(
@@ -14,15 +17,25 @@ def create_radio_btn(frame, my_text, var, value, row, col, width=4):
     return button
 
 class ChordSearch():
-    def __init__(self, window) -> None:
+    def __init__(self, window, color) -> None:
 
         self.window = window
+        self.btn_color = '#1a1a1a'
+        self.lbl_color = '#000000'
+        self.txt_color = '#ffffff'
 
-        self.frame = tk.Frame(window, bg='red')
+        pygame.mixer.init()
+        folder = os.getcwd()
+        folder = os.path.join(folder, "Rhodes Notes")
+        clip_folder = Path(folder)
+        self.file = f'{clip_folder}\\temp.wav'
+
+        self.frame = tk.Frame(window, bg=color)
         self.title = tk.Label(
             self.frame, 
             text='Chord Search', 
-            bg='red'
+            bg=color,
+            fg='#ffffff'
             )
         self.title.grid(row=0, column=4, sticky='ew')
 
@@ -33,13 +46,22 @@ class ChordSearch():
             uniform='equal'
             )
 
-        tk.Label(self.frame, text='Root').grid(row=1, column=1, sticky='ew')
-        tk.Label(self.frame, text='3rd').grid(row=1, column=2, sticky='ew')
-        tk.Label(self.frame, text='5th').grid(row=1, column=3, sticky='ew')
-        tk.Label(self.frame, text='7th').grid(row=1, column=4, sticky='ew')
-        tk.Label(self.frame, text='9th').grid(row=1, column=5, sticky='ew')
-        tk.Label(self.frame, text='11th').grid(row=1, column=6, sticky='ew')
-        tk.Label(self.frame, text='13th').grid(row=1, column=7, sticky='ew')
+        self.text_var = tk.StringVar()
+        self.text_var.set("Csus2 b5")
+
+        self.chord_label = tk.Label(self.frame, textvariable=self.text_var, bg=self.btn_color, fg=self.txt_color).grid(
+            row=15, 
+            column=5, 
+            sticky='ew'
+            )
+
+        tk.Label(self.frame, text='Root', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=1, sticky='ew')
+        tk.Label(self.frame, text='3rd', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=2, sticky='ew')
+        tk.Label(self.frame, text='5th', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=3, sticky='ew')
+        tk.Label(self.frame, text='7th', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=4, sticky='ew')
+        tk.Label(self.frame, text='9th', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=5, sticky='ew')
+        tk.Label(self.frame, text='11th', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=6, sticky='ew')
+        tk.Label(self.frame, text='13th', bg=self.lbl_color, fg=self.txt_color).grid(row=1, column=7, sticky='ew')
 
         self.root_var = tk.IntVar()
         self.third_var = tk.IntVar()
@@ -87,6 +109,11 @@ class ChordSearch():
                         variable=var,
                         value=j+1,
                         width=4,
+                        bg=color,
+                        fg=self.txt_color,
+                        activebackground=self.txt_color,
+                        activeforeground=self.txt_color,
+                        selectcolor=self.btn_color,
                         anchor='w'
                         )
 
@@ -97,6 +124,11 @@ class ChordSearch():
                         variable=var,
                         value=j,
                         width=4,
+                        bg=color,
+                        fg=self.txt_color,
+                        activebackground=self.txt_color,
+                        activeforeground=self.txt_color,
+                        selectcolor=self.btn_color,
                         anchor='w'
                         )
                 
@@ -109,7 +141,9 @@ class ChordSearch():
         self.play_chord_btn = tk.Button(
             self.frame, 
             text='Play Chord', 
-            command=lambda:audio.play_voicing(self.play_chord_cmd()),
+            bg=self.btn_color,
+            fg=self.txt_color,
+            command=lambda:self.play_chord_cmd(self.file),
             anchor='w'
             )
         self.play_chord_btn.grid(row=15, column=7, sticky='ew')
@@ -117,6 +151,8 @@ class ChordSearch():
         self.correct_chord_btn = tk.Button(
             self.frame,
             text='Correct Chord',
+            bg=self.btn_color,
+            fg=self.txt_color,
             command = lambda:self.chord_correction(),
             anchor = 'w'
             )
@@ -124,6 +160,8 @@ class ChordSearch():
 
     def chord_correction(self):
         self.chord=[var.get() for var in self.vars]
+
+        self.text_var.set(audio.chord_name(self.chord))
 
         #====chord modification
 
@@ -152,8 +190,8 @@ class ChordSearch():
 
             self.eleventh_var.set(0)
 
-        # sus 4 and sharp 9 -> set third to minor (2), 9 to 0, 11 to natural
-        if self.chord[1] == 4 and self.chord[4] == 3:
+        # sus 4 and sharp 9 and no 11 -> set third to minor (2), 9 to 0, 11 to natural
+        if self.chord[1] == 4 and self.chord[4] == 3 and self.chord[5] == 0:
             self.chord[1] = 2
             self.chord[4] = 0
             self.chord[5] = 1
@@ -163,8 +201,8 @@ class ChordSearch():
             self.eleventh_var.set(1)
 
 
-        # sus 4 and natural 9 -> set third to sus 2 (1), 9 to 0, 11 to natural
-        if self.chord[1] == 4 and self.chord[4] == 2:
+        # sus 4 and natural 9 and no 11 -> set third to sus 2 (1), 9 to 0, 11 to natural
+        if self.chord[1] == 4 and self.chord[4] == 2 and self.chord[5] == 0:
             self.chord[1] = 1
             self.chord[4] = 0
             self.chord[5] = 1
@@ -185,26 +223,32 @@ class ChordSearch():
 
             self.thirteenth_var.set(0)
 
-        # sharp 5 and sharp 11 -> set 5 to flat (1), 13 to flat (1)
-        if self.chord[2] == 3 and self.chord[5] == 2:
+        # sharp 5 and sharp 11 and no 13 -> set 5 to flat (1), 13 to flat (1)
+        if self.chord[2] == 3 and self.chord[5] == 2 and self.chord[6] == 0:
             self.chord[2] = 1
             self.chord[6] = 1
 
             self.fifth_var.set(1)
             self.thirteenth_var.set(1)
 
-    def play_chord_cmd(self):
+    def play_chord_cmd(self, filename):
 
         self.chord_correction()
         self.chord=[var.get() for var in self.vars]     
 
-        text_var = tk.StringVar()
-        text_var.set(audio.chord_name(self.chord))
-        tk.Label(self.frame, text=text_var.get()).grid(
-            row=15, 
-            column=5, 
-            sticky='ew'
-            )
+        file_exists = os.path.exists(filename)
+        if file_exists:
+            pygame.mixer.music.unload()
+            os.remove(filename)
 
-        return self.chord
+        segment = audio.play_chord_progression2([self.chord])
+        file = audio.file_from_audio_segment(segment, 'temp.wav')
+        self.play_sound(file)
+
+    def play_sound(self, filename):
+        with open(filename) as f:
+            pygame.mixer.music.load(filename)
+            pygame.mixer.music.play()
+            # pygame.mixer.music.get_endevent()
+            # pygame.event.wait()
         

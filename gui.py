@@ -14,16 +14,6 @@ e.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
 window.rowconfigure(0,weight=1)
 window.columnconfigure(0, weight=1, uniform='equal')
 
-def random_chord():
-    ind = randint(0, 6948)
-    chord = audio.chords.iloc[ind].values
-    name = chord[-1]
-    chord = chord[:-1]
-    text_var = tk.StringVar()
-    text_var.set(name)
-    tk.Label(window, text=text_var.get()).grid(row=5, column=0, sticky='ew')
-    audio.play_voicing(chord)
-
 def show_frame(frame):
     frame.tkraise()
 
@@ -38,13 +28,18 @@ Buttons to:
 -Play a random chord progression
 
 """
-menu_frame = tk.Frame(window)
-menu_title=tk.Label(menu_frame, text='Menu')
+menu_color = '#2f2f2f'
+btn_color = '#1a1a1a'
+txt_color = '#ffffff'
+menu_frame = tk.Frame(window, bg=menu_color)
+menu_title=tk.Label(menu_frame, text='Menu', bg=menu_color, fg='#ffffff')
 menu_title.grid(row=0, column=0)
 
 chord_srch_btn = tk.Button(
     menu_frame,
     text='Chord Search',
+    bg=btn_color,
+    fg=txt_color,
     command=lambda:show_frame(chord_search_display.frame),
     anchor='w'
     )
@@ -53,22 +48,18 @@ chord_srch_btn.grid(row=1, column=0, sticky='ew')
 chord_prog_btn = tk.Button(
     menu_frame, 
     text='Chord Progression Editor', 
+    bg=btn_color,
+    fg=txt_color,
     anchor='w',
     command=lambda:show_frame(chord_prog_display.frame)
     )
 chord_prog_btn.grid(row=2, column=0, sticky='ew')
 
-# voice_edit_btn = tk.Button(
-#     menu_frame, 
-#     text='Voice Editor', 
-#     command=lambda:show_frame(voice_edit_frame),
-#     anchor='w'
-#     )
-# voice_edit_btn.grid(row=3, column=0, sticky='ew')
-
 rndm_chord_btn = tk.Button(
     menu_frame, 
     text='Play Random Chord', 
+    bg=btn_color,
+    fg=txt_color,
     anchor='w',
     command=lambda:show_frame(random_chord_display.frame)
     )
@@ -78,27 +69,17 @@ menu_frame.grid(row=0, column=0, sticky='nsew')
 menu_frame.grid_columnconfigure(0, weight=1, uniform='equal')
 
 #====Chord search
-"""
-Checkboxes for root, third, ..., 13th
-Button to play the chord
-"""
+# window_color = '#013247'
+window_color = '#264166'
+chord_search_display = ChordSearch(window, color=window_color)
 
-chord_search_display = ChordSearch(window)
-
-#====Chord progression creator
-"""
-Dropdown for number of chords in progression
-
-Then for each slot, textboxes for chord, tuple, duration
-
-"""
-
-chord_prog_display = ChordProgEditor(window)
-
-#====Frame for voice editing
-#voice_edit_frame = tk.Frame(window)
+#====Chord progression editor
+chord_prog_display = ChordProgEditor(window, color=window_color)
 
 #====Frame for random chord playing
-random_chord_display = RandomChord(window)
+random_chord_display = RandomChord(window, color=window_color)
+
+
+show_frame(chord_search_display.frame)
 
 window.mainloop()
