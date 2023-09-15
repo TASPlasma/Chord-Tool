@@ -74,7 +74,7 @@ window_color = '#264166'
 chord_search_display = ChordSearch(window, color=window_color)
 
 #====Chord progression editor
-chord_prog_display = ChordProgEditor(window, color=window_color)
+chord_prog_display = ChordProgEditor(window)
 
 #====Frame for random chord playing
 random_chord_display = RandomChord(window, color=window_color)
