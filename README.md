@@ -26,6 +26,9 @@ Requirements:
 6. pygame
 7. ttk
 8. mido
+9. opencv (`pip install opencv-python`)
+10. pedalboard
+11. moviepy
 
 Download all files, save them to a folder called Chord-Tool. Run gui.py from the Chord-Tool folder.
 
